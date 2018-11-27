@@ -1,10 +1,12 @@
 # api packages
 import requests
 from requests_oauthlib import OAuth1
+import pyPTP
 
 # data packages
 import pandas as pd
 import json
+import time
 from datetime import datetime
 date_format = '%a %b %d %H:%M:%S %Y'
 
@@ -14,6 +16,7 @@ class TwitterAPI():
         self.auth = self.load_api_keys('api_keys.json')
         self.user_tweet_cols = ['id', 'created_at', 'text', 'retweeted']
         self.date_format = '%a %b %d %H:%M:%S %Y'
+        self.s = 1 # standard sleep time between api calls
         
         # @realDonaldTrump first tweet id of each month
         self.tweet_max_ids = {
@@ -61,16 +64,100 @@ class TwitterAPI():
             ,params=user_search_payload
             ,auth=self.auth)
 
-        # return api response
-        return user_search_response
+        # check api call status
+        if user_search_response.status_code == 200:
+            # api call succeeded
+            # convert response to json, then to a dataframe
+            return pd.DataFrame(user_search_response.json())
+        else:
+            # api call failed - return None
+            print('API Call failed. Status Code {0}'.format(
+                user_search_response.status_code))
+            return None
 
-    def response_to_df(self, response, filter_cols=False, cols=None):
-        df = pd.DataFrame(response.json())
-        if filter_cols:
-            df = df.filter(cols)
+    def keyword_tweet_search(self, search_term, count=100, max_id=None, until=None):
+        # resource url
+        keyword_search_url = 'https://api.twitter.com/1.1/search/tweets.json'
+
+        # keyword search params
+        keyword_search_payload = {
+            'q': search_term
+            ,'count': count
+            ,'until': until
+            ,'max_id': max_id}
+
+        # twitter api call
+        keyword_search_response = requests.get(
+            keyword_search_url
+            ,params=keyword_search_payload
+            ,auth=self.auth)
+
+        # check api call status
+        if keyword_search_response.status_code == 200:
+            # api call succeeded
+            # convert response to json, then to a dataframe and filter down
+            return pd.DataFrame(keyword_search_response.json()['statuses'])
+        else:
+            # api call failed - return None
+            print('API Call failed. Status Code {0}'.format(
+                keyword_search_response.status_code))
+            return None
+
+    def get_tweets_since(self, search_term, start_dt=datetime(2018, 11, 1)):
+        current_dt = datetime.today()
+        max_id = None
+        cols = ['id', 'created_at', 'geo', 'favorited_count', 'retweet_count' 'place', 'text', 'user']
+        df = pd.DataFrame(columns=cols)
+        ptp = pyPTP.process_time_printer(50)
+        
+        while start_dt < current_dt:
+            st = ptp.get_time()
+            temp_df = self.keyword_tweet_search(search_term, max_id=max_id)
+            temp_df = temp_df.filter(cols)
+            df = df.append(temp_df)
+            
+            # get value of last tweet id
+            # this becomes the max_id of next iteration
+            try:
+                max_id = temp_df.tail(1)['id'][len(temp_df)-1]
+            except:
+                break
+            
+            # get date of last tweet
+            # this becomes the current_dt value
+            datepart_1 = temp_df.tail(1)['created_at'][len(temp_df)-1][:19]
+            datepart_2 = temp_df.tail(1)['created_at'][len(temp_df)-1][-5:]
+            current_dt = datetime.strptime(datepart_1 + datepart_2, self.date_format)
+            
+            ptp.increment(st)
+            time.sleep(self.s)
+            
         return df
 
     def get_max_id(self, screen_name):
-        response = self.user_tweet_search(screen_name)
-        df = self.response_to_df(response)
+        df = self.user_tweet_search(screen_name)
         return df['id'][0] + 1
+
+    def seconds_since_tweet(self, row):
+        datepart_1 = row['created_at'][:19]
+        datepart_2 = row['created_at'][-5:]
+        dt = datetime.strptime(datepart_1 + datepart_2, date_format)
+        return round((datetime.utcnow() - dt).total_seconds(), 1)
+
+    def minutes_since_tweet(self, row):
+        return row['seconds_since_tweet'] / 60
+
+    def days_since_tweet(self, row):
+        return row['seconds_since_tweet'] / (60 * 60 * 24)
+
+    def get_username(self, row):
+        return row['user']['screen_name']
+
+    def get_user_location(self, row):
+        return row['user']['location']
+
+    def get_day(self, row):
+        datepart_1 = row['created_at'][:19]
+        datepart_2 = row['created_at'][-5:]
+        dt = datetime.strptime(datepart_1 + datepart_2, self.date_format)
+        return dt.day
