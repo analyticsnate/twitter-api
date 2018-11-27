@@ -1,2 +1,2 @@
 # Twitter API Apps
-**by**: Nate Muth ((https://twitter.com/analyticsnate "@analyticsnate"))
+**by**: Nate Muth ([@analyticsNate](https://twitter.com/analyticsnate))
