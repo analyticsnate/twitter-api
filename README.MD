@@ -13,4 +13,4 @@ This app pulls tweets with about a given subject in the last *n* hours. The twee
 <br>
 Run via command line: <br>
 `> python 02_Most_Tweets_On_Subject.py "NationalFrenchToastDay" 2 "black"` <br>
-![alt text](https://github.com/analyticsnate/twitter-api/blob/master/most_tweets_NationalFrenchToastDay.png)
+
