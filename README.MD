@@ -9,5 +9,7 @@ This app pulls tweets with #Tableau and #PowerBI since a certain date. Then, usi
 <br>
 
 #### 02_Most_Tweets_On_Subject
-This app pulls tweets with about a given subject in the last *n* hours. The tweets are the grouped by the twitter username, sorted, and displayed in simple horizontal bar chart. The bar chart is also saved as a .png in the local directory.<br>
+This app pulls tweets with about a given subject in the last *n* hours. The tweets are the grouped by the twitter username, sorted, and displayed in simple horizontal bar chart. The bar chart is also saved as a .png in the local directory.
+Run via command line: 
+> python 02_Most_Tweets_On_Subject.py "NationalFrenchToastDay" 2 "black" <br>
 ![alt text](https://github.com/analyticsnate/twitter-api/blob/master/most_tweets_NationalFrenchToastDay.png)
