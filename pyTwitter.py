@@ -12,11 +12,17 @@ date_format = '%a %b %d %H:%M:%S %Y'
 
 class TwitterAPI():
 
-    def __init__(self):
+    def __init__(self, s=1):
+        """
+        Params:
+        -------
+        s : int
+        sleep time between api calls (seconds)
+        """
         self.auth = self.load_api_keys('api_keys.json')
         self.user_tweet_cols = ['id', 'created_at', 'text', 'retweeted']
         self.date_format = '%a %b %d %H:%M:%S %Y'
-        self.s = 1 # standard sleep time between api calls
+        self.s = s # standard sleep time between api calls
         
         # @realDonaldTrump first tweet id of each month
         self.tweet_max_ids = {
@@ -67,8 +73,12 @@ class TwitterAPI():
         # check api call status
         if user_search_response.status_code == 200:
             # api call succeeded
-            # convert response to json, then to a dataframe
-            return pd.DataFrame(user_search_response.json())
+            # convert response to json, then to a dataframe and filter down
+            return pd.DataFrame(user_search_response.json()['statuses'])
+        elif user_search_response.status_code == 429:
+            # api call failed because I'm not paying money - return None
+            print('Too many twitter api requests!')
+            return None
         else:
             # api call failed - return None
             print('API Call failed. Status Code {0}'.format(
@@ -97,6 +107,10 @@ class TwitterAPI():
             # api call succeeded
             # convert response to json, then to a dataframe and filter down
             return pd.DataFrame(keyword_search_response.json()['statuses'])
+        elif keyword_search_response.status_code == 429:
+            # api call failed because I'm not paying money - return None
+            print('Too many twitter api requests!')
+            return None
         else:
             # api call failed - return None
             print('API Call failed. Status Code {0}'.format(
@@ -113,8 +127,12 @@ class TwitterAPI():
         while start_dt < current_dt:
             st = ptp.get_time()
             temp_df = self.keyword_tweet_search(search_term, max_id=max_id)
-            temp_df = temp_df.filter(cols)
-            df = df.append(temp_df)
+            if temp_df is not None:
+                temp_df = temp_df.filter(cols)
+                df = df.append(temp_df)
+            else:
+                # returning none means the API failed
+                break
             
             # get value of last tweet id
             # this becomes the max_id of next iteration
