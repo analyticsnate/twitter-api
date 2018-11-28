@@ -18,8 +18,8 @@ class process_time_printer():
     def increment(self, st):
         self.time_list.append(self.get_time() - st)
         if self.count == False:
-            print('| {0}/{1} complete | {2} seconds elapsed |     '.format(
-                self.iteration, self.count, round(self.get_time() - self.start_time, 4)
+            print('| {0} complete | {1} seconds elapsed |     '.format(
+                self.iteration, round(self.get_time() - self.start_time, 4)
             ), end='\r', flush=True)
         else:
             print('| {0}/{1} complete | {2} seconds elapsed | {3} estimated seconds remaining |     '.format(

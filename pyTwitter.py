@@ -122,7 +122,7 @@ class TwitterAPI():
         max_id = None
         cols = ['id', 'created_at', 'geo', 'favorited_count', 'retweet_count' 'place', 'text', 'user']
         df = pd.DataFrame(columns=cols)
-        ptp = pyPTP.process_time_printer(50)
+        ptp = pyPTP.process_time_printer()
         
         while start_dt < current_dt:
             st = ptp.get_time()
@@ -169,7 +169,7 @@ class TwitterAPI():
         return row['seconds_since_tweet'] / (60 * 60 * 24)
 
     def get_username(self, row):
-        return row['user']['screen_name']
+        return '@' + row['user']['screen_name']
 
     def get_user_location(self, row):
         return row['user']['location']
