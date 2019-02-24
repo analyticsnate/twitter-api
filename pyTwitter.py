@@ -2,6 +2,7 @@
 import requests
 from requests_oauthlib import OAuth1
 import pyPTP
+import os
 
 # data packages
 import pandas as pd
@@ -23,6 +24,10 @@ class TwitterAPI():
         self.user_tweet_cols = ['id', 'created_at', 'text', 'retweeted']
         self.date_format = '%a %b %d %H:%M:%S %Y'
         self.s = s # standard sleep time between api calls
+
+        # set up api endpoints
+        self.user_url = 'https://api.twitter.com/1.1/statuses/user_timeline.json'
+        self.keyword_url = 'https://api.twitter.com/1.1/search/tweets.json'
         
         # @realDonaldTrump first tweet id of each month
         self.tweet_max_ids = {
@@ -39,8 +44,11 @@ class TwitterAPI():
             ,'Nov 2018': 1057797701834813440}
 
     def load_api_keys(self, json_file):
+        location = os.path.realpath(
+            os.path.join(os.getcwd(), os.path.dirname(__file__)))
+
         # load api keys json file into dict
-        api_keys_file = open(json_file)
+        api_keys_file = open(os.path.join(location, json_file))
         api_keys_str = api_keys_file.read()
         api_keys_dict = json.loads(api_keys_str)
 
@@ -52,9 +60,27 @@ class TwitterAPI():
             ,api_keys_dict['access_secret_token']
         )
 
+    def id_tweet_search(self, id):
+        """
+        Returns single tweet with the given id.
+        """
+
+        # id search params
+        id_search_payload = {
+            'max_id': id
+            , 'count': 1}
+
+        # api call
+        id_search_response = requests.get(
+            self.keyword_url
+            , params=id_search_payload
+            , auth=self.auth)
+
+        # check api call status
+        if id_search_response.status_code == 200:
+            return pd.DataFrame(id_search_response.json())
+
     def user_tweet_search(self, screen_name, max_id=None, since_id=None, include_rts=True, count=200):
-        # resource url
-        user_search_url = 'https://api.twitter.com/1.1/statuses/user_timeline.json'
 
         # user search params
         user_search_payload = {
@@ -66,7 +92,7 @@ class TwitterAPI():
 
         # api call
         user_search_response = requests.get(
-            user_search_url
+            self.user_url
             ,params=user_search_payload
             ,auth=self.auth)
 
@@ -86,8 +112,6 @@ class TwitterAPI():
             return None
 
     def keyword_tweet_search(self, search_term, count=100, max_id=None, until=None):
-        # resource url
-        keyword_search_url = 'https://api.twitter.com/1.1/search/tweets.json'
 
         # keyword search params
         keyword_search_payload = {
@@ -98,7 +122,7 @@ class TwitterAPI():
 
         # twitter api call
         keyword_search_response = requests.get(
-            keyword_search_url
+            self.keyword_url
             ,params=keyword_search_payload
             ,auth=self.auth)
 
@@ -134,14 +158,14 @@ class TwitterAPI():
                 # returning none means the API failed
                 break
             
-            # get value of last tweet id
+            # get value of last tweet id and subtract 1
             # this becomes the max_id of next iteration
             try:
-                max_id = temp_df.tail(1)['id'][len(temp_df)-1]
+                max_id = temp_df.tail(1)['id'][len(temp_df)-1] - 1
             except:
                 break
             
-            # get date of last tweet
+            # get date of last tweet or first tweet...?
             # this becomes the current_dt value
             datepart_1 = temp_df.tail(1)['created_at'][len(temp_df)-1][:19]
             datepart_2 = temp_df.tail(1)['created_at'][len(temp_df)-1][-5:]
