@@ -28,20 +28,6 @@ class TwitterAPI():
         # set up api endpoints
         self.user_url = 'https://api.twitter.com/1.1/statuses/user_timeline.json'
         self.keyword_url = 'https://api.twitter.com/1.1/search/tweets.json'
-        
-        # @realDonaldTrump first tweet id of each month
-        self.tweet_max_ids = {
-            'Jan 2018': 947802588174577664
-            ,'Feb 2018': 959029384052166657
-            ,'Mar 2018': 969178931369783296
-            ,'Apr 2018': 980421275326865409
-            ,'May 2018': 991267863674675200
-            ,'Jun 2018': 1002506360351846400
-            ,'Jul 2018': 1013391783533989888
-            ,'Aug 2018': 1024450744198553600
-            ,'Sep 2018': 1035678961349668864
-            ,'Oct 2018': 1046708836407685122
-            ,'Nov 2018': 1057797701834813440}
 
     def load_api_keys(self, json_file):
         location = os.path.realpath(
@@ -59,26 +45,6 @@ class TwitterAPI():
             ,api_keys_dict['access_token']
             ,api_keys_dict['access_secret_token']
         )
-
-    def id_tweet_search(self, id):
-        """
-        Returns single tweet with the given id.
-        """
-
-        # id search params
-        id_search_payload = {
-            'max_id': id
-            , 'count': 1}
-
-        # api call
-        id_search_response = requests.get(
-            self.keyword_url
-            , params=id_search_payload
-            , auth=self.auth)
-
-        # check api call status
-        if id_search_response.status_code == 200:
-            return pd.DataFrame(id_search_response.json())
 
     def user_tweet_search(self, screen_name, max_id=None, since_id=None, include_rts=True, count=200):
 
